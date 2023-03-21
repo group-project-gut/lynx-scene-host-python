@@ -1,11 +1,23 @@
 #!/usr/bin/env python3
 
 def main():
-    from src.server import Server
-    from src.handler import Handler
+    from fastapi import FastAPI
+    import uvicorn
 
-    scene_host = Server(8233, Handler)
-    scene_host.run()
+    app = FastAPI()
+    context = {'num': 1}
+
+
+    @app.get("/get")
+    async def get():
+        return {"message": context['num']}
+    
+    @app.get("/add")
+    async def add():
+        context['num'] = context['num'] + 1
+        return {"message": context['num']}
+    
+    uvicorn.run(app, host="0.0.0.0", port=8555, workers=1)
 
 if __name__ == '__main__':
     main()
