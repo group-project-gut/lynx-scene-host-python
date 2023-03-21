@@ -48,6 +48,7 @@ class SceneServer():
         @self.app.post("/tick")
         async def tick():
             actions = []
+            # I guess it should be async but no idea how it works with send and recv
             for process_data in self.processes.values():
                 serialized_scene = self.scene.serialize()
                 process_data.pipe.send(serialized_scene)
