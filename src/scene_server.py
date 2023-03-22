@@ -8,16 +8,19 @@ from lynx.common.vector import Vector
 from pydantic import BaseModel
 from multiprocessing import Pipe, Process
 
+
 def execution_runtime(pipe: Connection, object_id: int):
     scene_serialzied = pipe.recv()
     scene = Scene.deserialize(scene_serialzied)
-    action = Move(object_id=1, vector=Vector(10,10))
+    action = Move(object_id=1, vector=Vector(10, 10))
     pipe.send([action.serialize()])
+
 
 @dataclass
 class ProcessData():
     process: Process = None
     pipe: Connection = None
+
 
 class SceneServer():
     def __init__(self) -> None:
@@ -39,9 +42,11 @@ class SceneServer():
 
             if object.tick != "":
                 parent_conn, child_conn = Pipe()
-                p = Process(target=execution_runtime, args=(child_conn, object.id,))
+                p = Process(target=execution_runtime,
+                            args=(child_conn, object.id,))
                 p.start()
-                self.processes[object.id] = ProcessData(process=p, pipe=parent_conn)
+                self.processes[object.id] = ProcessData(
+                    process=p, pipe=parent_conn)
 
             return {"serialized_object": object.serialize()}
 
@@ -55,4 +60,3 @@ class SceneServer():
                 actions += process_data.pipe.recv()
 
             return {"actions": actions}
-

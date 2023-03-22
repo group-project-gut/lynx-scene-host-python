@@ -18,6 +18,7 @@ async def spam(s, count: int):
     res = await asyncio.gather(*tasks)
     return res
 
+
 async def main():
     async with aiohttp.ClientSession() as session:
         htmls = await spam(session, 1000)
