@@ -1,6 +1,7 @@
 lynx-python-common==0.1
-fastapi<=0.95.0
-pytest<=7.2.0
-uvicorn<=0.21.0
-aiohttp==3.8.4
+fastapi>=0.95.0
+pytest>=7.2.0
+uvicorn>=0.21.0
+aiohttp>=3.8.4
 asynctest==0.13.0
+aioprocessing==2.0.1
