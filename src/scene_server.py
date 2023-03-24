@@ -44,7 +44,7 @@ class SceneServer():
         @self.app.post("/add_object")
         async def add(r: AddObjectRequest):
             object = Object.deserialize(r.serialized_object)
-            # self.scene.add_entity(object)
+            self.scene.add_entity(object)
             if object.tick != "":
                 parent_conn, child_conn = AioPipe()
                 p = AioProcess(target=execution_runtime,
@@ -61,6 +61,18 @@ class SceneServer():
 
         @self.app.post("/tick")
         async def tick():
+            serialized_scene = self.scene.serialize()
+            tasks = []
+            for process_data in self.processes.values():
+                task = asyncio.create_task(
+                    run_object(serialized_scene, process_data))
+                tasks.append(task)
+
+            actions = await asyncio.gather(*tasks)
+            return {"actions": actions}
+        
+        @self.app.post("/tick_sync")
+        async def tick_sync():
             actions = []
             serialized_scene = self.scene.serialize()
 
@@ -72,16 +84,4 @@ class SceneServer():
             stop = time.perf_counter()
             seq_time = stop - start
 
-            # Async approach
-            tasks = []
-            start = time.perf_counter()
-            for process_data in self.processes.values():
-                task = asyncio.create_task(
-                    run_object(serialized_scene, process_data))
-                tasks.append(task)
-
-            actions = await asyncio.gather(*tasks)
-            stop = time.perf_counter()
-            async_time = stop - start
-
-            return {"seq": seq_time, "async": async_time}
+            return {"actions": actions}
