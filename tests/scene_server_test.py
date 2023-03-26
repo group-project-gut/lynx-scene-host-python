@@ -61,6 +61,6 @@ class TestSceneServer(asynctest.TestCase):
             data = await TestSceneServer.spam_objects(session, 100)
 
         async with aiohttp.ClientSession() as session:
-            response = await TestSceneServer.fetch(session, "http://0.0.0.0:8555/")
+            response = await TestSceneServer.fetch(session, "http://0.0.0.0:8555/?tick_number=-1")
         scene = Scene.deserialize(response['scene'])
         # TODO: assert scene contents
