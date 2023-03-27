@@ -7,19 +7,35 @@ from attr import dataclass
 from fastapi import FastAPI
 from lynx.common.object import Object
 from lynx.common.scene import Scene
+from lynx.common.enitity import Entity
 from pydantic import BaseModel
 
 
 def execution_runtime(pipe: AioConnection, object_id: int):
     from lynx.common.actions.move import Move
     from lynx.common.vector import Vector
+    from lynx.common.actions.action import Action
+
+    scene_serialized = pipe.recv()
+    scene: Scene= Scene.deserialize(scene_serialized)
+
+    def send(action: Action):
+        pipe.send(action.serialize())
+        scene_serialized = pipe.recv()
+        scene = Scene.deserialize(scene_serialized)
+
+    builtins = {
+        'move': lambda vector: send(Move(object_id, vector)),
+        'Vector': Vector,
+    }
 
     while (True):
-        scene_serialzied = pipe.recv()
-        scene = Scene.deserialize(scene_serialzied)
-        action = Move(object_id=object_id, vector=Vector(10, 10))
-        time.sleep(1)
-        pipe.send([action.serialize()])
+        # Sure, I know exec bad
+        # pylint: disable=exec-used
+        exec(
+            scene.get_object_by_id(object_id).tick,
+            {'__builtins__': builtins},
+        )
 
 
 @dataclass
@@ -50,26 +66,35 @@ class SceneServer():
                 p = AioProcess(target=execution_runtime,
                                args=(child_conn, object.id,))
                 p.start()
+                
+                # I'm not 100% sure if we should await it or not
+                await parent_conn.coro_send(self.scene.serialize())
                 self.processes[object.id] = ProcessData(
                     process=p, pipe=parent_conn)
 
             return {"serialized_object": object.serialize()}
 
-        async def run_object(serialized_scene: str, process_data: ProcessData):
-            await process_data.pipe.coro_send(serialized_scene)
-            return await process_data.pipe.coro_recv()
-
         @self.app.post("/tick")
         async def tick():
-            serialized_scene = self.scene.serialize()
-            tasks = []
+            future_actions = []
             for process_data in self.processes.values():
-                task = asyncio.create_task(
-                    run_object(serialized_scene, process_data))
-                tasks.append(task)
+                future_actions.append(process_data.pipe.coro_recv())
 
-            actions = await asyncio.gather(*tasks)
-            return {"actions": actions}
+            serialized_actions = await asyncio.gather(*future_actions)
+
+            # Apply changes
+            for serialized_action in serialized_actions:
+                action = Entity.deserialize(serialized_action)
+                action.apply(self.scene)
+
+            serialized_scene = self.scene.serialize()
+            future_sends = []
+            for process_data in self.processes.values():
+                future_sends.append(process_data.pipe.coro_send(serialized_scene))
+
+            await asyncio.gather(*future_sends)
+
+            return {"scene": serialized_scene}
         
         @self.app.post("/tick_sync")
         async def tick_sync():
