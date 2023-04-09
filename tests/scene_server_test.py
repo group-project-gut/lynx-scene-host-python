@@ -50,7 +50,7 @@ class TestSceneServer(asynctest.TestCase):
         for i in range(count):
             object = Object(id=i)
             task = asyncio.create_task(TestSceneServer.post(
-                session, "http://0.0.0.0:8555/add_object", {'serialized_object': object.serialize()}))
+                session, "http://127.0.0.1:8555/add_object", {'serialized_object': object.serialize()}))
             tasks.append(task)
         res = await asyncio.gather(*tasks)
         return res
@@ -61,6 +61,6 @@ class TestSceneServer(asynctest.TestCase):
             data = await TestSceneServer.spam_objects(session, 100)
 
         async with aiohttp.ClientSession() as session:
-            response = await TestSceneServer.fetch(session, "http://0.0.0.0:8555/?tick_number=-1")
+            response = await TestSceneServer.fetch(session, "http://127.0.0.1:8555/?tick_number=-1")
         scene = Scene.deserialize(response['scene'])
         # TODO: assert scene contents
