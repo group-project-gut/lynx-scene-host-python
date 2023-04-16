@@ -45,7 +45,7 @@ class ProcessData:
     pipe: AioConnection = None
 
 
-def calculate_deltas(from_tick_number: int, to_tick_number: int, actions_in_ticks: List[List[Union[str]]]) -> List[List[str]]:
+def calculate_deltas(from_tick_number: int, to_tick_number: int, actions_in_ticks: List[List[str]]) -> List[List[str]]:
     deltas = []
     for actions_in_tick in actions_in_ticks[(from_tick_number + 1):to_tick_number]:
         deltas = deltas + actions_in_tick
@@ -91,31 +91,39 @@ class SceneServer:
 
             return {"serialized_object": object.serialize()}
 
-        @self.app.post("/tick")
-        async def tick():
+        async def fetch_actions() -> List[Entity]:
             future_actions = []
             for process_data in self.processes.values():
                 future_actions.append(process_data.pipe.coro_recv())
 
             serialized_actions = await asyncio.gather(*future_actions)
+            return [Entity.deserialize(serialized_action) for serialized_action in serialized_actions]
 
-            # Apply changes
-            for serialized_action in serialized_actions:
-                action = Entity.deserialize(serialized_action)
-                for requirement in action.requirements():
-                    if not requirement(self.scene):
-                        return {"error": f"Requirements for {action} are not met"}
+        def apply_actions(actions: List[Entity]) -> List[str]:
+            # Not sure if we should use `str` or `Action`
+            applied_actions: List[str] = []
+            for action in actions:
+                if action.satisfies_requirements(self.scene):
+                    action.apply(self.scene)
+                    applied_actions.append(action.serialize())
+                else:
+                    # Log that requirements were not satisfied
+                    pass
 
-                action.apply(self.scene)
-
-            self.applied_actions.append(serialized_actions)
-            self.tick_number += 1
-
+        async def send_scene():
             serialized_scene = self.scene.serialize()
             future_sends = []
             for process_data in self.processes.values():
                 future_sends.append(process_data.pipe.coro_send(serialized_scene))
 
-            await asyncio.gather(*future_sends)
+            await asyncio.gather(*future_sends) 
 
-            return {"scene": serialized_scene}
+        @self.app.post("/tick")
+        async def tick():
+            actions = await fetch_actions()
+            applied_actions = apply_actions(actions)
+            self.applied_actions.append(applied_actions)
+            self.tick_number += 1
+            send_scene()
+
+            return {"tick_number": self.tick_number}
