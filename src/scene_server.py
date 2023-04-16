@@ -1,21 +1,22 @@
 import asyncio
 import time
-from typing import List, Dict, Union
+from contextlib import asynccontextmanager
+from typing import Dict, List, Union
 
 from aioprocessing import AioPipe, AioProcess
 from aioprocessing.connection import AioConnection
 from attr import dataclass
 from fastapi import FastAPI
+from lynx.common.enitity import Entity
 from lynx.common.object import Object
 from lynx.common.scene import Scene
-from lynx.common.enitity import Entity
 from pydantic import BaseModel
 
 
 def execution_runtime(pipe: AioConnection, object_id: int):
+    from lynx.common.actions.action import Action
     from lynx.common.actions.move import Move
     from lynx.common.vector import Vector
-    from lynx.common.actions.action import Action
 
     scene_serialized = pipe.recv()
     scene: Scene = Scene.deserialize(scene_serialized)
@@ -28,6 +29,7 @@ def execution_runtime(pipe: AioConnection, object_id: int):
     builtins = {
         'move': lambda vector: send(Move(object_id, vector)),
         'Vector': Vector,
+        'sleep': time.sleep,
     }
 
     while (True):
@@ -124,6 +126,14 @@ class SceneServer:
             applied_actions = apply_actions(actions)
             self.applied_actions.append(applied_actions)
             self.tick_number += 1
-            send_scene()
+            await send_scene()
 
             return {"tick_number": self.tick_number}
+        
+    # Teardown is necessary to close all subprocesses
+    # I tired using FastAPI `lifespan` but it might not work
+    # with apps that are not top-level
+    def teardown(self):
+        for process_data in self.processes.values():
+            process_data.process.terminate()
+
