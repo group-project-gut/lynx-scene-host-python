@@ -119,18 +119,3 @@ class SceneServer:
             await asyncio.gather(*future_sends)
 
             return {"scene": serialized_scene}
-
-        @self.app.post("/tick_sync")
-        async def tick_sync():
-            actions = []
-            serialized_scene = self.scene.serialize()
-
-            # Sequential approach
-            start = time.perf_counter()
-            for process_data in self.processes.values():
-                process_data.pipe.send(serialized_scene)
-                actions += process_data.pipe.recv()
-            stop = time.perf_counter()
-            seq_time = stop - start
-
-            return {"actions": actions}
