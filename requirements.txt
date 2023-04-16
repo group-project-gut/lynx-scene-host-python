@@ -1,4 +1,4 @@
-git+https://github.com/group-project-gut/lynx-python-common@LNX-83-create-generic-requirements
+git+https://github.com/group-project-gut/lynx-python-common@master
 fastapi>=0.95.0
 pytest>=7.2.0
 uvicorn>=0.21.0

@@ -13,7 +13,7 @@ async def fetch(s, url):
 async def spam(s, count: int):
     tasks = []
     for _ in range(count):
-        task = asyncio.create_task(fetch(s, "http://0.0.0.0:8555/add"))
+        task = asyncio.create_task(fetch(s, "http://127.0.0.1:8555/add"))
         tasks.append(task)
     res = await asyncio.gather(*tasks)
     return res
