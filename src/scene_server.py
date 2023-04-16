@@ -102,6 +102,10 @@ class SceneServer:
             # Apply changes
             for serialized_action in serialized_actions:
                 action = Entity.deserialize(serialized_action)
+                for requirement in action.requirements():
+                    if not requirement(self.scene):
+                        return {"error": f"Requirements for {action} are not met"}
+
                 action.apply(self.scene)
 
             self.applied_actions.append(serialized_actions)
