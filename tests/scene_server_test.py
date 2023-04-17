@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 import pytest
 from httpx import AsyncClient
@@ -36,6 +37,8 @@ class TestSceneServer():
     @pytest.mark.asyncio
     async def test_spam_objects(self):
         server = SceneServer()
+        start_time = time.time()
+
         async with AsyncClient(app=server.app, base_url="http://test") as ac:
             response = await TestSceneServer.fetch(ac, "/?tick_number=-1")
             await TestSceneServer.spam_objects(ac, 100)
@@ -46,4 +49,7 @@ class TestSceneServer():
             response = await TestSceneServer.fetch(ac, "/?tick_number=-1")
             scene = Scene.deserialize(response['scene'])
 
+        
+        elapsed = time.time() - start_time
+        assert elapsed < 50
         server.teardown()

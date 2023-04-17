@@ -1,5 +1,4 @@
 import asyncio
-import time
 from contextlib import asynccontextmanager
 from typing import Dict, List, Union
 
@@ -17,6 +16,7 @@ def execution_runtime(pipe: AioConnection, object_id: int):
     from lynx.common.actions.action import Action
     from lynx.common.actions.move import Move
     from lynx.common.vector import Vector
+    from time import sleep
 
     scene_serialized = pipe.recv()
     scene: Scene = Scene.deserialize(scene_serialized)
@@ -29,7 +29,7 @@ def execution_runtime(pipe: AioConnection, object_id: int):
     builtins = {
         'move': lambda vector: send(Move(object_id, vector)),
         'Vector': Vector,
-        'sleep': time.sleep,
+        'sleep': sleep,
     }
 
     while (True):
