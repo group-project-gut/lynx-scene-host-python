@@ -1,7 +1,9 @@
 import asyncio
+import itertools
 from contextlib import asynccontextmanager
 from typing import Dict, List, Union
 
+import opensimplex
 from aioprocessing import AioPipe, AioProcess
 from aioprocessing.connection import AioConnection
 from attr import dataclass
@@ -9,14 +11,16 @@ from fastapi import FastAPI
 from lynx.common.enitity import Entity
 from lynx.common.object import Object
 from lynx.common.scene import Scene
+from lynx.common.vector import Vector
 from pydantic import BaseModel
 
 
 def execution_runtime(pipe: AioConnection, object_id: int):
+    from time import sleep
+
     from lynx.common.actions.action import Action
     from lynx.common.actions.move import Move
     from lynx.common.vector import Vector
-    from time import sleep
 
     scene_serialized = pipe.recv()
     scene: Scene = Scene.deserialize(scene_serialized)
@@ -129,6 +133,24 @@ class SceneServer:
             await send_scene()
 
             return {"tick_number": self.tick_number}
+        
+        @self.app.post("/clear")
+        async def clear():
+            self.scene = Scene()
+
+        @self.app.post("/populate")
+        async def populate():
+            await clear()
+            opensimplex.seed(1234)
+            id = 0
+            for (x,y) in itertools.product(range(10), range(10)):
+                self.scene.add_entity(Object(id=id, name="grass", position=Vector(x,y), walkable=True))
+                id += 1
+                if opensimplex.noise2(x,y) > .3:
+                    self.scene.add_entity(Object(id=id, name="tree", position=Vector(x,y), walkable=False))
+                    id += 1
+
+            return {"id": id}
         
     # Teardown is necessary to close all subprocesses
     # I tired using FastAPI `lifespan` but it might not work
