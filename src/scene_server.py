@@ -49,6 +49,7 @@ def calculate_deltas(from_tick_number: int, to_tick_number: int, actions_in_tick
     deltas = []
     for actions_in_tick in actions_in_ticks[(from_tick_number + 1):to_tick_number]:
         deltas = deltas + actions_in_tick
+    print("--------- Deltas: "  + str(deltas))
     return deltas
 
 
@@ -61,6 +62,13 @@ class SceneServer:
         # each element represents actions applied in a consecutive tick
         # TODO change to states = {self.scene.hash(): [None]}
         self.applied_actions = [[]]
+
+        self.scene.add_entity(Object(name="Agent", position=(1,1) , tick="move(Vector(1, 0))"))
+        self.scene.add_entity(Object(name="Grass", position=(1,1), walkable=True))
+        self.scene.add_entity(Object(name="Dirt", position=(2,1), walkable=True))
+        self.scene.add_entity(Object(name="Dirt", position=(3,1), walkable=True))
+        self.scene.add_entity(Object(name="Dirt", position=(4,1), walkable=True))
+        self.scene.add_entity(Object(name="Dirt", position=(5,1), walkable=True))
 
         @self.app.get("/")
         async def get(tick_number: int) -> Dict[str, Union[int, str, List[List[str]]]]:
@@ -98,6 +106,7 @@ class SceneServer:
                 future_actions.append(process_data.pipe.coro_recv())
 
             serialized_actions = await asyncio.gather(*future_actions)
+            print("--------- Serialized actions: "  + str(serialized_actions))
 
             # Apply changes
             for serialized_action in serialized_actions:
