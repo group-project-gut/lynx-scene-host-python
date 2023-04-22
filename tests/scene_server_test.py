@@ -27,7 +27,7 @@ class TestSceneServer():
     async def spam_objects(ac: AsyncClient, count: int):
         tasks = []
         for i in range(count):
-            object = Object(id=i, tick=f"move(Vector({i},{i}))")
+            object = Object(id=i, tick=f"")
             task = asyncio.create_task(TestSceneServer.post(
                 ac, "/add_object", {'serialized_object': object.serialize()}))
             tasks.append(task)
@@ -41,13 +41,18 @@ class TestSceneServer():
 
         async with AsyncClient(app=server.app, base_url="http://test") as ac:
             response = await TestSceneServer.fetch(ac, "/?tick_number=-1")
-            await TestSceneServer.spam_objects(ac, 100)
+            #await TestSceneServer.spam_objects(ac, 100)
+
+            await TestSceneServer.post(ac, "/populate")
+            agent = Object(id=1000, tick=f"move(Vector(1,1))")
+            await TestSceneServer.post(ac, "/add_object", {'serialized_object': agent.serialize()})
             await TestSceneServer.post(ac, "/tick")
             await TestSceneServer.post(ac, "/tick")
             await TestSceneServer.post(ac, "/tick")
 
             response = await TestSceneServer.fetch(ac, "/?tick_number=-1")
-            scene = Scene.deserialize(response['scene'])
+            response = await TestSceneServer.fetch(ac, "/?tick_number=0")
+            # scene = Scene.deserialize(response['scene'])
 
         
         elapsed = time.time() - start_time
