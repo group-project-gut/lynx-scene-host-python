@@ -68,6 +68,11 @@ class SceneServer:
         # TODO change to states = {self.scene.hash(): [None]}
         self.applied_actions = [[]]
 
+        self.scene.add_entity(Object(name="Agent", id=123, position=Vector(1,1) , tick="move(Vector(1,0))"))
+        for x in range(10):
+            for y in range(10):
+                self.scene.add_entity(Object(name="Grass", position=Vector(x,y), walkable=True))
+
         @self.app.get("/")
         async def get(tick_number: int) -> Dict[str, Union[int, str, List[List[str]]]]:
             # if player has no scene or player tick number is incorrect
@@ -130,6 +135,8 @@ class SceneServer:
         @self.app.post("/tick")
         async def tick():
             actions = await fetch_actions()
+            print("--- ACTIONS: " + str(actions))
+            print("--- AGENT: " + str(self.scene.entities[0]))
             applied_actions = apply_actions(actions)
             self.applied_actions.append(applied_actions)
             self.tick_number += 1
