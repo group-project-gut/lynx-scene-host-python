@@ -51,9 +51,9 @@ class ProcessData:
     pipe: AioConnection = None
 
 
-def calculate_deltas(from_tick_number: int, to_tick_number: int, actions_in_ticks: List[List[str]]) -> List[List[str]]:
+def calculate_deltas(from_tick_number: int, to_tick_number: int, actions_in_ticks: List[List[str]]) -> List[str]:
     deltas = []
-    for actions_in_tick in actions_in_ticks[(from_tick_number + 1):to_tick_number]:
+    for actions_in_tick in actions_in_ticks[(from_tick_number + 1):to_tick_number+1]:
         deltas = deltas + actions_in_tick
     return deltas
 
