@@ -15,10 +15,10 @@ class TestCalculateDeltas:
         [],
         [Move(object_id=124, movement=Direction.NORTH.value).serialize(), Move(object_id=123, movement=Direction.WEST.value).serialize()]
     ]
-    expected_deltas = [applied_actions[2][0], applied_actions[3][0], applied_actions[3][1]]
+    expected_deltas = [applied_actions[1][0], applied_actions[1][1], applied_actions[2][0], applied_actions[3][0], applied_actions[3][1]]
 
     def test_success(self) -> NoReturn:
-        deltas = calculate_deltas(1, 4, self.applied_actions)
+        deltas = calculate_deltas(0, 3, self.applied_actions)
         assert deltas == self.expected_deltas
 
     def test_failure(self) -> NoReturn:

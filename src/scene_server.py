@@ -75,7 +75,8 @@ class SceneServer:
             if tick_number < 0 or tick_number > self.tick_number:
                 return {"tick_number": self.tick_number, "scene": self.scene.serialize()}
             else:
-                return {"tick_number": self.tick_number, "deltas": calculate_deltas(self.tick_number, tick_number, self.applied_actions)}
+                #return {"tick_number": self.tick_number, "deltas": calculate_deltas(tick_number, self.tick_number, self.applied_actions)}
+                return {"tick_number": self.tick_number, "deltas": f"{calculate_deltas(tick_number, self.tick_number, self.applied_actions)}"}
 
         class AddObjectRequest(BaseModel):
             serialized_object: str
@@ -115,6 +116,8 @@ class SceneServer:
                 else:
                     # Log that requirements were not satisfied
                     pass
+
+            return applied_actions
 
         async def send_scene():
             serialized_scene = self.scene.serialize()
