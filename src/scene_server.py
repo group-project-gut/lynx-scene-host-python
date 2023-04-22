@@ -64,11 +64,9 @@ class SceneServer:
         self.applied_actions = [[]]
 
         self.scene.add_entity(Object(name="Agent", position=(1,1) , tick="move(Vector(1, 0))"))
-        self.scene.add_entity(Object(name="Grass", position=(1,1), walkable=True))
-        self.scene.add_entity(Object(name="Dirt", position=(2,1), walkable=True))
-        self.scene.add_entity(Object(name="Dirt", position=(3,1), walkable=True))
-        self.scene.add_entity(Object(name="Dirt", position=(4,1), walkable=True))
-        self.scene.add_entity(Object(name="Dirt", position=(5,1), walkable=True))
+        for x in range(10):
+            for y in range(10):
+                self.scene.add_entity(Object(name="Grass", position=(x,y), walkable=True))
 
         @self.app.get("/")
         async def get(tick_number: int) -> Dict[str, Union[int, str, List[List[str]]]]:
@@ -77,7 +75,7 @@ class SceneServer:
             if tick_number < 0 or tick_number > self.tick_number:
                 return {"tick_number": self.tick_number, "scene": self.scene.serialize()}
             else:
-                return {"tick_number": self.tick_number, "deltas": calculate_deltas(self.tick_number, tick_number, self.applied_actions)}
+                return {"tick_number": self.tick_number, "deltas": calculate_deltas(tick_number, self.tick_number, self.applied_actions)}
 
         class AddObjectRequest(BaseModel):
             serialized_object: str
