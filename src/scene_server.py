@@ -147,10 +147,10 @@ class SceneServer:
             opensimplex.seed(1234)
             id = 0
             for (x,y) in itertools.product(range(10), range(10)):
-                self.scene.add_entity(Object(id=id, name="grass", position=Vector(x,y), walkable=True))
+                self.scene.add_entity(Object(id=id, name="Grass", position=Vector(x,y), walkable=True))
                 id += 1
                 if opensimplex.noise2(x,y) > .3:
-                    self.scene.add_entity(Object(id=id, name="tree", position=Vector(x,y), walkable=False))
+                    self.scene.add_entity(Object(id=id, name="Tree", position=Vector(x,y), walkable=False))
                     id += 1
 
             return {"id": id}
