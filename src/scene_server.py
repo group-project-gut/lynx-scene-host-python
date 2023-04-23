@@ -2,6 +2,7 @@ import asyncio
 import itertools
 from contextlib import asynccontextmanager
 from typing import Dict, List, Union
+import json
 
 import opensimplex
 from aioprocessing import AioPipe, AioProcess
@@ -75,8 +76,7 @@ class SceneServer:
             if tick_number < 0 or tick_number > self.tick_number:
                 return {"tick_number": self.tick_number, "scene": self.scene.serialize()}
             else:
-                #return {"tick_number": self.tick_number, "deltas": calculate_deltas(tick_number, self.tick_number, self.applied_actions)}
-                return {"tick_number": self.tick_number, "deltas": f"{calculate_deltas(tick_number, self.tick_number, self.applied_actions)}"}
+                return {"tick_number": self.tick_number, "deltas": json.dumps(calculate_deltas(tick_number, self.tick_number, self.applied_actions))}
 
         class AddObjectRequest(BaseModel):
             serialized_object: str
@@ -146,7 +146,7 @@ class SceneServer:
             await clear()
             opensimplex.seed(1234)
             id = 0
-            for (x,y) in itertools.product(range(10), range(10)):
+            for (x,y) in itertools.product(range(100), range(10)):
                 self.scene.add_entity(Object(id=id, name="Grass", position=Vector(x,y), walkable=True))
                 id += 1
                 if opensimplex.noise2(x,y) > .3:
