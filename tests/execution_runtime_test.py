@@ -34,4 +34,4 @@ class TestExecutionRuntime:
         except JSONDecodeError:
             pass
 
-        assert received_actions == ['{"type": "Move", "attributes": "{\\"object_id\\": 0, \\"vector\\": {\\"x\\": 0, \\"y\\": 10}}"}', '{"type": "Move", "attributes": "{\\"object_id\\": 0, \\"vector\\": {\\"x\\": -20, \\"y\\": 0}}"}']
+        assert received_actions == ['{"type": "Move", "attributes": "{\\"object_id\\": 0, \\"movement\\": {\\"x\\": 0, \\"y\\": 10}}"}', '{"type": "Move", "attributes": "{\\"object_id\\": 0, \\"movement\\": {\\"x\\": -20, \\"y\\": 0}}"}']
