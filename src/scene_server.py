@@ -1,8 +1,7 @@
 import asyncio
 import itertools
-from contextlib import asynccontextmanager
-from typing import Dict, List, Union, Optional
 import json
+from typing import Dict, List, Optional, Union
 
 import opensimplex
 from aioprocessing import AioPipe, AioProcess
@@ -15,38 +14,7 @@ from lynx.common.scene import Scene
 from lynx.common.vector import Vector
 from pydantic import BaseModel
 
-
-def execution_runtime(pipe: AioConnection, object_id: int):
-    from time import sleep
-
-    from lynx.common.actions.action import Action
-    from lynx.common.actions.move import Move
-    from lynx.common.actions.push import Push
-    from lynx.common.vector import Vector
-    from lynx.common.enums import Direction
-
-    scene_serialized = pipe.recv()
-    scene: Scene = Scene.deserialize(scene_serialized)
-
-    def send(action: Action):
-        pipe.send(action.serialize())
-        scene_serialized = pipe.recv()
-        scene = Scene.deserialize(scene_serialized)
-
-    builtins = {
-        'move': lambda vector: send(Move(object_id, vector)),
-        'push': lambda vector: send(Push(object_id, vector)),
-        'Vector': Vector,
-        'sleep': sleep,
-    }
-
-    while (True):
-        # Sure, I know exec bad
-        # pylint: disable=exec-used
-        exec(
-            scene.get_object_by_id(object_id).tick,
-            {'__builtins__': builtins},
-        )
+from src.execution_runtime import execution_runtime
 
 
 @dataclass
@@ -158,6 +126,10 @@ class SceneServer:
 
             return {"id": id}
         
+        @self.app.post('/teardown')
+        async def teardown():
+            self.teardown()
+
     # Teardown is necessary to close all subprocesses
     # I tired using FastAPI `lifespan` but it might not work
     # with apps that are not top-level
