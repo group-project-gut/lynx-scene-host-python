@@ -180,3 +180,8 @@ async def populate():
 @app.post('/teardown')
 async def teardown():
     close_processes()
+    return {"status": "done"}
+
+@app.get('/health')
+async def health():
+    return {"state": "working"}
