@@ -3,6 +3,7 @@
 # .__) \__, |__ | \| |__     |  | \__/ .__)  |      |     |   |  |  | \__/ | \|
 
 import asyncio
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 import itertools
 import json
@@ -46,10 +47,15 @@ class AddObjectRequest(BaseModel):
 #  /_\  |__) |__)    |  \ |__ |__  | |\ | |  |  | /  \ |\ |
 # /   \ |    |       |__/ |__ |    | | \| |  |  | \__/ | \|
 
-
-app = FastAPI()
-
 state = GlobalState(Scene(), {}, [[]], 0)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    state.processes = {}
+    yield
+    close_processes()
+
+app = FastAPI(lifespan=lifespan)
 
 #       __      __   __  __      ___            __  ___    __        __
 # |__| |__ |   |__) |__ |__)    |__  |  | |\ | /  `  |  | /  \ |\ | (__'
@@ -93,6 +99,10 @@ async def send_scene():
         future_sends.append(process_data.pipe.coro_send(serialized_scene))
 
     await asyncio.gather(*future_sends)
+
+def close_processes():
+    for process_data in state.processes.values():
+        process_data.process.terminate()
 
 #  __   __       ___  __  __
 # |__) /  \ |  |  |  |__ (__'
@@ -169,5 +179,4 @@ async def populate():
 
 @app.post('/teardown')
 async def teardown():
-    for process_data in state.processes.values():
-        process_data.process.terminate()
+    close_processes()
