@@ -101,6 +101,7 @@ class SceneServer:
         @self.app.post("/tick")
         async def tick():
             actions = await fetch_actions()
+            actions.extend([Entity.deserialize(pending_action) for pending_action in self.scene.pending_actions])
             applied_actions = apply_actions(actions)
             self.applied_actions.append(applied_actions)
             self.tick_number += 1
