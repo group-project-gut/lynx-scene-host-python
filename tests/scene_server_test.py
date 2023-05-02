@@ -6,7 +6,7 @@ from httpx import AsyncClient
 from lynx.common.object import Object
 from lynx.common.scene import Scene
 
-from src.scene_server import SceneServer
+from src.app import app
 
 
 class TestSceneServer():
@@ -36,12 +36,11 @@ class TestSceneServer():
 
     @pytest.mark.asyncio
     async def test_spam_objects(self):
-        server = SceneServer()
         start_time = time.time()
 
-        async with AsyncClient(app=server.app, base_url="http://test") as ac:
+        async with AsyncClient(app=app, base_url="http://test") as ac:
             response = await TestSceneServer.fetch(ac, "/?tick_number=-1")
-            #await TestSceneServer.spam_objects(ac, 100)
+            # await TestSceneServer.spam_objects(ac, 100)
 
             await TestSceneServer.post(ac, "/populate")
             agent = Object(id=1000, tick=f"move(Vector(1,1))")
@@ -54,7 +53,5 @@ class TestSceneServer():
             response = await TestSceneServer.fetch(ac, "/?tick_number=0")
             # scene = Scene.deserialize(response['scene'])
 
-        
         elapsed = time.time() - start_time
         assert elapsed < 50
-        server.teardown()
