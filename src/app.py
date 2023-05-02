@@ -20,21 +20,17 @@ from pydantic import BaseModel
 
 from src.runtime import execution_runtime
 
-#   _    __   __      __   __  ___          ___    __
-#  /_\  |__) |__)    |  \ |__ |__  | |\ | |  |  | /  \ |\ |
-# /   \ |    |       |__/ |__ |    | | \| |  |  | \__/ | \|
-
-app = FastAPI()
-scene = Scene()
-processes = {}
-tick_number = 0
-# each element represents actions applied in a consecutive tick
-# TODO change to states = {self.scene.hash(): [None]}
-applied_actions = [[]]
-
 #  __    _   ___   _       __  ___  __        __  ___       __   __  __
 # |  \  /_\   |   /_\     (__'  |  |__) |  | /  `  |  |  | |__) |__ (__'
 # |__/ /   \  |  /   \    .__)  |  |  \ \__/ \__,  |  \__/ |  \ |__ .__)
+
+
+@dataclass
+class GlobalState:
+    scene: Scene = None,
+    processes: Dict = None,
+    transitions: Dict = None,
+    tick_number: int = 0
 
 
 @dataclass
@@ -45,6 +41,15 @@ class ProcessData:
 
 class AddObjectRequest(BaseModel):
     serialized_object: str
+
+#   _    __   __      __   __  ___          ___    __
+#  /_\  |__) |__)    |  \ |__ |__  | |\ | |  |  | /  \ |\ |
+# /   \ |    |       |__/ |__ |    | | \| |  |  | \__/ | \|
+
+
+app = FastAPI()
+
+state = GlobalState(Scene(), {}, [[]], 0)
 
 #       __      __   __  __      ___            __  ___    __        __
 # |__| |__ |   |__) |__ |__)    |__  |  | |\ | /  `  |  | /  \ |\ | (__'
@@ -60,7 +65,7 @@ def calculate_deltas(from_tick_number: int, to_tick_number: int, actions_in_tick
 
 async def fetch_actions() -> List[Entity]:
     future_actions = []
-    for process_data in processes.values():
+    for process_data in state.processes.values():
         future_actions.append(process_data.pipe.coro_recv())
 
     serialized_actions = await asyncio.gather(*future_actions)
@@ -71,8 +76,8 @@ def apply_actions(actions: List[Entity]) -> List[str]:
     # Not sure if we should use `str` or `Action`
     applied_actions: List[str] = []
     for action in actions:
-        if action.satisfies_requirements(scene):
-            action.apply(scene)
+        if action.satisfies_requirements(state.scene):
+            action.apply(state.scene)
             applied_actions.append(action.serialize())
         else:
             # Log that requirements were not satisfied
@@ -82,9 +87,9 @@ def apply_actions(actions: List[Entity]) -> List[str]:
 
 
 async def send_scene():
-    serialized_scene = scene.serialize()
+    serialized_scene = state.scene.serialize()
     future_sends = []
-    for process_data in processes.values():
+    for process_data in state.processes.values():
         future_sends.append(process_data.pipe.coro_send(serialized_scene))
 
     await asyncio.gather(*future_sends)
@@ -98,16 +103,16 @@ async def send_scene():
 async def get(tick_number: int) -> Dict[str, Union[int, str, List[List[str]]]]:
     # if player has no scene or player tick number is incorrect
     # TODO remove tick number and use scene hash instead e.g. if player_scene_hash not in self.states.keys():
-    if tick_number < 0 or tick_number > tick_number:
-        return {"tick_number": tick_number, "scene": scene.serialize()}
+    if tick_number < 0 or tick_number > state.tick_number:
+        return {"tick_number": state.tick_number, "scene": state.scene.serialize()}
     else:
-        return {"tick_number": tick_number, "deltas": json.dumps(calculate_deltas(tick_number, tick_number, applied_actions))}
+        return {"tick_number": state.tick_number, "deltas": json.dumps(calculate_deltas(tick_number, state.tick_number, state.transitions))}
 
 
 @app.post("/add_object")
 async def add(r: AddObjectRequest):
     object = Object.deserialize(r.serialized_object)
-    scene.add_entity(object)
+    state.scene.add_entity(object)
     if object.tick != "":
         parent_conn, child_conn = AioPipe()
         p = AioProcess(target=execution_runtime,
@@ -115,8 +120,8 @@ async def add(r: AddObjectRequest):
         p.start()
 
         # I'm not 100% sure if we should await it or not
-        await parent_conn.coro_send(scene.serialize())
-        processes[object.id] = ProcessData(
+        await parent_conn.coro_send(state.scene.serialize())
+        state.processes[object.id] = ProcessData(
             process=p, pipe=parent_conn)
 
     return {"serialized_object": object.serialize()}
@@ -124,17 +129,16 @@ async def add(r: AddObjectRequest):
 
 @app.post("/tick")
 async def tick():
-    global tick_number
-    
     actions = await fetch_actions()
     actions.extend([Entity.deserialize(pending_action)
-                   for pending_action in scene.pending_actions])
+                   for pending_action in state.scene.pending_actions])
+    state.scene.pending_actions.clear()
     applied_actions = apply_actions(actions)
-    applied_actions.append(applied_actions)
-    tick_number += 1
+    state.transitions.append(applied_actions)
+    state.tick_number += 1
     await send_scene()
 
-    return {"tick_number": tick_number}
+    return {"tick_number": state.tick_number}
 
 
 @app.post("/clear")
@@ -148,11 +152,11 @@ async def populate():
     opensimplex.seed(1234)
     id = 0
     for (x, y) in itertools.product(range(100), range(10)):
-        scene.add_entity(Object(id=id, name="Grass",
-                         position=Vector(x, y), walkable=True))
+        state.scene.add_entity(Object(id=id, name="Grass",
+                                      position=Vector(x, y), walkable=True))
         id += 1
         if opensimplex.noise2(x, y) > .3:
-            scene.add_entity(
+            state.scene.add_entity(
                 Object(id=id, name="Tree", position=Vector(x, y), walkable=False))
             id += 1
 
@@ -165,5 +169,5 @@ async def populate():
 
 @app.post('/teardown')
 async def teardown():
-    for process_data in processes.values():
+    for process_data in state.processes.values():
         process_data.process.terminate()
