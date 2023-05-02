@@ -12,4 +12,4 @@ RUN pip install -r /scene-host/requirements.txt
 
 WORKDIR /scene-host
 
-ENTRYPOINT [ "/scene-host/main.py" ]
+ENTRYPOINT [ "uvicorn" ]
