@@ -153,7 +153,7 @@ async def tick():
 
 @app.post("/clear")
 async def clear():
-    scene = Scene()
+    state.scene = Scene()
 
 
 @app.post("/populate")
