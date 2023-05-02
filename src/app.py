@@ -124,6 +124,8 @@ async def add(r: AddObjectRequest):
 
 @app.post("/tick")
 async def tick():
+    global tick_number
+    
     actions = await fetch_actions()
     actions.extend([Entity.deserialize(pending_action)
                    for pending_action in scene.pending_actions])
