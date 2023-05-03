@@ -8,6 +8,8 @@ def execution_runtime(pipe: AioConnection, object_id: int):
     from lynx.common.actions.action import Action
     from lynx.common.actions.chop import Chop
     from lynx.common.actions.move import Move
+    from lynx.common.actions.push import Push
+    from lynx.common.enums import Direction
     from lynx.common.vector import Vector
 
     scene_serialized = pipe.recv()
@@ -22,8 +24,9 @@ def execution_runtime(pipe: AioConnection, object_id: int):
         'agent': scene.get_object_by_id(object_id),
         'chop': lambda vector: send(Chop(object_id, vector)),
         'move': lambda vector: send(Move(object_id, vector)),
-        'Vector': Vector,
+        'push': lambda vector: send(Push(object_id, vector)),
         'sleep': sleep,
+        'Vector': Vector,
     }
 
     while (True):
