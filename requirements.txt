@@ -1,4 +1,4 @@
-git+https://github.com/group-project-gut/lynx-python-common@B-LNX-124-add-pushing-objects
+git+https://github.com/group-project-gut/lynx-python-common@master
 aiohttp>=3.8.4
 aioprocessing==2.0.1
 asgi_lifespan==2.1.0
