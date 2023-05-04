@@ -153,7 +153,7 @@ async def tick():
 
 @app.post("/clear")
 async def clear():
-    state.scene = Scene()
+    state = GlobalState(Scene(), {}, [[]], 0)
 
 
 @app.post("/populate")
