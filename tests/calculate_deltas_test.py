@@ -3,7 +3,7 @@ from typing import NoReturn
 from lynx.common.actions.move import Move
 from lynx.common.enums import Direction
 
-from src.scene_server import calculate_deltas
+from src.app import calculate_deltas
 
 
 class TestCalculateDeltas:

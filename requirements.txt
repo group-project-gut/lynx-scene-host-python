@@ -1,6 +1,7 @@
 git+https://github.com/group-project-gut/lynx-python-common@master
 aiohttp>=3.8.4
 aioprocessing==2.0.1
+asgi_lifespan==2.1.0
 fastapi>=0.95.0
 httpx==0.24.0
 opensimplex==0.4.4
