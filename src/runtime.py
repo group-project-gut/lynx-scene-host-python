@@ -29,6 +29,9 @@ def execution_runtime(pipe: AioConnection, object_id: int):
         'log': lambda text: send(MessageLog(object_id, text)),
         'sleep': sleep,
         'Vector': Vector,
+        'str': str,
+        'range': range,
+        'len': len,
     }
 
     while (True):
