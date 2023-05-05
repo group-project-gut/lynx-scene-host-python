@@ -122,6 +122,7 @@ def close_processes():
 async def tick_trigger():
     if time.time() - state.last_tick >= 1:
         await tick()
+        state.last_tick = time.time()
 
 
 #  __   __       ___  __  __
@@ -149,6 +150,10 @@ async def add(r: AddObjectRequest):
         p = AioProcess(target=execution_runtime,
                        args=(child_conn, object.id,))
         p.start()
+
+        await parent_conn.coro_send(state.scene.serialize())
+        state.processes[object.id] = ProcessData(
+            process=p, pipe=parent_conn)
 
     return {"serialized_object": object.serialize()}
 
