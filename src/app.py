@@ -124,6 +124,23 @@ async def tick_trigger():
         await tick()
         state.last_tick = time.time()
 
+async def wait_for_next_tick():
+    tick = state.tick_number
+    while state.tick_number != tick + 1:
+        await asyncio.sleep(0.1)
+
+async def spawn_process_for_new_agent(object: Object):
+    await wait_for_next_tick()
+
+    parent_conn, child_conn = AioPipe()
+    p = AioProcess(target=execution_runtime,
+                    args=(child_conn, object.id,))
+    p.start()
+
+    await parent_conn.coro_send(state.scene.serialize())
+    state.processes[object.id] = ProcessData(
+        process=p, pipe=parent_conn)
+
 
 #  __   __       ___  __  __
 # |__) /  \ |  |  |  |__ (__'
@@ -142,19 +159,11 @@ async def get(tick_number: int, background_tasks: BackgroundTasks) -> Dict[str, 
 
 
 @app.post("/add_object")
-async def add(r: AddObjectRequest):
+async def add(r: AddObjectRequest, background_tasks: BackgroundTasks):
     object = Object.deserialize(r.serialized_object)
     state.scene.add_to_pending_actions(CreateObject(r.serialized_object).serialize())
     if object.tick != "":
-        parent_conn, child_conn = AioPipe()
-        p = AioProcess(target=execution_runtime,
-                       args=(child_conn, object.id,))
-        p.start()
-
-        await parent_conn.coro_send(state.scene.serialize())
-        state.processes[object.id] = ProcessData(
-            process=p, pipe=parent_conn)
-
+        background_tasks.add_task(spawn_process_for_new_agent, object)
     return {"serialized_object": object.serialize()}
 
 
