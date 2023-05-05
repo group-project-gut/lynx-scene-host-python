@@ -7,17 +7,20 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 import itertools
 import json
+import time
 from typing import Dict, List, Optional, Union
-from fastapi import FastAPI
-import httpx
+
 
 import opensimplex
+import httpx
+from fastapi import BackgroundTasks, FastAPI
 from aioprocessing import AioPipe, AioProcess
 from aioprocessing.connection import AioConnection
 from lynx.common.enitity import Entity
 from lynx.common.object import Object
 from lynx.common.scene import Scene
 from lynx.common.vector import Vector
+from lynx.common.actions.create_object import CreateObject
 from pydantic import BaseModel
 
 from src.runtime import execution_runtime
@@ -33,6 +36,7 @@ class GlobalState:
     processes: Dict = None,
     transitions: Dict = None,
     tick_number: int = 0
+    last_tick: float = 0
 
 
 @dataclass
@@ -114,13 +118,20 @@ def close_processes():
     for process_data in state.processes.values():
         process_data.process.terminate()
 
+
+async def tick_trigger():
+    if time.time() - state.last_tick >= 1:
+        await tick()
+
+
 #  __   __       ___  __  __
 # |__) /  \ |  |  |  |__ (__'
 # |  \ \__/ \__/  |  |__ .__)
 
 
 @app.get("/")
-async def get(tick_number: int) -> Dict[str, Union[int, str, List[List[str]]]]:
+async def get(tick_number: int, background_tasks: BackgroundTasks) -> Dict[str, Union[int, str, List[List[str]]]]:
+    background_tasks.add_task(tick_trigger)
     # if player has no scene or player tick number is incorrect
     # TODO remove tick number and use scene hash instead e.g. if player_scene_hash not in self.states.keys():
     if tick_number < 0 or tick_number > state.tick_number:
@@ -132,17 +143,12 @@ async def get(tick_number: int) -> Dict[str, Union[int, str, List[List[str]]]]:
 @app.post("/add_object")
 async def add(r: AddObjectRequest):
     object = Object.deserialize(r.serialized_object)
-    state.scene.add_entity(object)
+    state.scene.add_to_pending_actions(CreateObject(r.serialized_object).serialize())
     if object.tick != "":
         parent_conn, child_conn = AioPipe()
         p = AioProcess(target=execution_runtime,
                        args=(child_conn, object.id,))
         p.start()
-
-        # I'm not 100% sure if we should await it or not
-        await parent_conn.coro_send(state.scene.serialize())
-        state.processes[object.id] = ProcessData(
-            process=p, pipe=parent_conn)
 
     return {"serialized_object": object.serialize()}
 
