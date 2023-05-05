@@ -46,9 +46,6 @@ class TestSceneServer():
                 await TestSceneServer.post(ac, "/populate")
                 agent = Object(id=1000, tick=f"move(Vector(1,0))")
                 await TestSceneServer.post(ac, "/add_object", {'serialized_object': agent.serialize()})
-                await TestSceneServer.post(ac, "/tick")
-                await TestSceneServer.post(ac, "/tick")
-                await TestSceneServer.post(ac, "/tick")
 
                 response = await TestSceneServer.fetch(ac, "/?tick_number=-1")
                 response = await TestSceneServer.fetch(ac, "/?tick_number=0")
