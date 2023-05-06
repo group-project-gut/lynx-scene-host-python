@@ -140,8 +140,7 @@ async def add(r: AddObjectRequest):
 @app.post("/tick")
 async def tick():
     actions = await fetch_actions()
-    actions.extend([Entity.deserialize(pending_action)
-                   for pending_action in state.scene.pending_actions])
+    actions = [Entity.deserialize(pending_action) for pending_action in state.scene.pending_actions] + actions
     state.scene.pending_actions.clear()
     applied_actions = apply_actions(actions)
     state.transitions.append(applied_actions)
