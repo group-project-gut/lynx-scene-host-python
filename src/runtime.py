@@ -10,8 +10,9 @@ def execution_runtime(pipe: AioConnection, object_id: int):
     from lynx.common.actions.move import Move
     from lynx.common.actions.push import Push
     from lynx.common.actions.message_log import MessageLog
-    from lynx.common.enums import Direction
     from lynx.common.vector import Vector
+    from lynx.common.enums import Direction
+
 
     scene_serialized = pipe.recv()
     scene: Scene = Scene.deserialize(scene_serialized)
@@ -27,6 +28,10 @@ def execution_runtime(pipe: AioConnection, object_id: int):
         'move': lambda vector: send(Move(object_id, vector)),
         'push': lambda vector: send(Push(object_id, vector)),
         'log': lambda text: send(MessageLog(object_id, text)),
+        'NORTH': Direction.NORTH.value,
+        'SOUTH': Direction.SOUTH.value,
+        'EAST': Direction.EAST.value,
+        'WEST': Direction.WEST.value,
         'sleep': sleep,
         'Vector': Vector,
         'str': str,
