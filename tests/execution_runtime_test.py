@@ -9,7 +9,7 @@ class TestExecutionRuntime:
         from src.app import execution_runtime
 
         scene = Scene()
-        object = Object(id=0, tick="move(Vector(0,10))\nmove(Vector(-20,0))")
+        object = Object(id=0, tick="move(Vector(0,1))\nmove(Vector(-1,0))")
         scene.add_entity(object)
 
         received_actions = []
@@ -36,5 +36,5 @@ class TestExecutionRuntime:
         except JSONDecodeError:
             pass
 
-        assert received_actions == ['{"type": "Move", "attributes": {"object_id": 0, "movement": {"x": 0, "y": 10}}}',
-                                    '{"type": "Move", "attributes": {"object_id": 0, "movement": {"x": -20, "y": 0}}}']
+        assert received_actions == ['{"type": "Move", "attributes": {"object_id": 0, "direction": {"x": 0, "y": 1}}}',
+                                    '{"type": "Move", "attributes": {"object_id": 0, "direction": {"x": -1, "y": 0}}}']

@@ -44,7 +44,7 @@ class TestSceneServer():
                 await TestSceneServer.spam_objects(ac, 100)
 
                 await TestSceneServer.post(ac, "/populate")
-                agent = Object(id=1000, tick=f"move(Vector(1,1))")
+                agent = Object(id=1000, tick=f"move(Vector(1,0))")
                 await TestSceneServer.post(ac, "/add_object", {'serialized_object': agent.serialize()})
                 await TestSceneServer.post(ac, "/tick")
                 await TestSceneServer.post(ac, "/tick")
