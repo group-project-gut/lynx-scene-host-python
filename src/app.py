@@ -24,6 +24,7 @@ from lynx.common.scene import Scene
 from lynx.common.vector import Vector
 from pydantic import BaseModel
 
+# from algorithms.a_star_algorithm import AStarAlgorithm
 from src.runtime import execution_runtime
 from src.utils.logger import get_logger
 
@@ -76,6 +77,11 @@ app.add_middleware(GZipMiddleware, minimum_size=100)
 #       __      __   __  __      ___            __  ___    __        __
 # |__| |__ |   |__) |__ |__)    |__  |  | |\ | /  `  |  | /  \ |\ | (__'
 # |  | |__ |__ |    |__ |  \    |    \__/ | \| \__,  |  | \__/ | \| .__)
+
+async def post(url: str, payload):
+    async with httpx.AsyncClient() as client:
+        result = await client.post(url, json=payload)
+    return result
 
 
 async def post(url: str, payload):
@@ -260,7 +266,7 @@ async def populate():
     await clear()
     opensimplex.seed(1234)
     id = 0
-    for (x, y) in itertools.product(range(100), range(10)):
+    for (x, y) in itertools.product(range(100), range(100)):
         state.scene.add_entity(Object(id=id, name="Grass",
                                       position=Vector(x, y), tags=['walkable']))
         id += 1
@@ -272,6 +278,7 @@ async def populate():
                 Object(id=id, name=entity_name, position=Vector(x, y)))
             id += 1
     logger.debug(f"Scene has been successfully populated")
+
     return {"id": id}
 
 
@@ -294,6 +301,20 @@ async def generate_scene():
 # Teardown is necessary to close all subprocesses
 # I tired using FastAPI `lifespan` but it might not work
 # with apps that are not top-level
+
+
+@app.post("/generate_scene")
+async def generate_scene():
+    import os
+
+    url = os.getenv('LYNX_SCENE_GENERATOR_URL')
+
+    if url == None:
+        url = 'https://scene-generator.kubernetes.blazej-smorawski.com/get_scene'
+
+    await clear()
+    response = await post(url, payload={"seed": "test", "width": 128, "height": 128})
+    state.scene = Scene.deserialize(response.text)
 
 
 @app.post('/teardown')

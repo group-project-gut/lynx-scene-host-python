@@ -2,6 +2,7 @@ from aioprocessing.connection import AioConnection
 from lynx.common.scene import Scene
 
 from src.utils.logger import get_logger
+from src.algorithms.a_star_algorithm import AStarAlgorithm
 
 logger = get_logger()
 
@@ -29,6 +30,7 @@ def execution_runtime(pipe: AioConnection, object_id: int):
 
     def send(action: Action):
         logger.debug(f"Sending action: {action.serialize()}")
+        nonlocal scene
         pipe.send(action.serialize())
         logger.debug(f"Action has been successfully sent")
         logger.debug(f"Waiting for scene to be sent")
@@ -38,6 +40,16 @@ def execution_runtime(pipe: AioConnection, object_id: int):
         scene = Scene.deserialize(scene_serialized)
         logger.debug(f"Scene has been successfully deserialized")
 
+    def goto(move, position: Vector):
+        nonlocal scene
+        obj = scene.get_object_by_id(object_id)
+        algorithm = AStarAlgorithm(obj.position, position)
+        vectors = algorithm.get_path(scene)
+        for vector in vectors:
+            move(vector)
+        if obj.position == position:
+            return
+
     builtins = {
         'agent': scene.get_object_by_id(object_id),
         'chop': lambda vector: send(Chop(object_id, vector)),
@@ -45,6 +57,7 @@ def execution_runtime(pipe: AioConnection, object_id: int):
         'push': lambda vector: send(Push(object_id, vector)),
         'mine': lambda vector: send(Mine(object_id, vector)),
         'log': lambda text: send(MessageLog(object_id, text)),
+        'goto': lambda position: goto(lambda vector: send(Move(object_id, vector)), position),
         'NORTH': Direction.NORTH.value,
         'SOUTH': Direction.SOUTH.value,
         'EAST': Direction.EAST.value,
