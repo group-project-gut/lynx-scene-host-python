@@ -42,14 +42,11 @@ class TestSceneServer():
             async with AsyncClient(app=app, base_url="http://test") as ac:
                 response = await TestSceneServer.fetch(ac, "/?tick_number=-1")
                 await TestSceneServer.spam_objects(ac, 100)
-
                 await TestSceneServer.post(ac, "/populate")
-                agent = Object(id=1000, tick=f"move(Vector(1,0))")
-                await TestSceneServer.post(ac, "/add_object", {'serialized_object': agent.serialize()})
-
                 response = await TestSceneServer.fetch(ac, "/?tick_number=-1")
                 response = await TestSceneServer.fetch(ac, "/?tick_number=0")
-                # scene = Scene.deserialize(response['scene'])
+
+                # we cannot test add_object with tick here, AsyncManager doesn't handle BackgroundTasks
 
             elapsed = time.time() - start_time
         assert elapsed < 50
