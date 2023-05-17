@@ -9,6 +9,7 @@ import itertools
 import json
 from typing import Dict, List, Optional, Union
 from fastapi import FastAPI
+import httpx
 
 import opensimplex
 from aioprocessing import AioPipe, AioProcess
@@ -47,7 +48,9 @@ class AddObjectRequest(BaseModel):
 #  /_\  |__) |__)    |  \ |__ |__  | |\ | |  |  | /  \ |\ |
 # /   \ |    |       |__/ |__ |    | | \| |  |  | \__/ | \|
 
+
 state = GlobalState(Scene(), {}, [[]], 0)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -60,6 +63,12 @@ app = FastAPI(lifespan=lifespan)
 #       __      __   __  __      ___            __  ___    __        __
 # |__| |__ |   |__) |__ |__)    |__  |  | |\ | /  `  |  | /  \ |\ | (__'
 # |  | |__ |__ |    |__ |  \    |    \__/ | \| \__,  |  | \__/ | \| .__)
+
+
+async def post(url: str, payload):
+    async with httpx.AsyncClient() as client:
+        result = await client.post(url, json=payload)
+    return result
 
 
 def calculate_deltas(from_tick_number: int, to_tick_number: int, actions_in_ticks: List[List[Optional[str]]]) -> List[Optional[str]]:
@@ -99,6 +108,7 @@ async def send_scene():
         future_sends.append(process_data.pipe.coro_send(serialized_scene))
 
     await asyncio.gather(*future_sends)
+
 
 def close_processes():
     for process_data in state.processes.values():
@@ -140,7 +150,8 @@ async def add(r: AddObjectRequest):
 @app.post("/tick")
 async def tick():
     actions = await fetch_actions()
-    actions = [Entity.deserialize(pending_action) for pending_action in state.scene.pending_actions] + actions
+    actions.extend([Entity.deserialize(pending_action)
+                   for pending_action in state.scene.pending_actions])
     state.scene.pending_actions.clear()
     applied_actions = apply_actions(actions)
     state.transitions.append(applied_actions)
@@ -174,6 +185,20 @@ async def populate():
 
     return {"id": id}
 
+
+@app.post("/generate_scene")
+async def generate_scene():
+    import os
+
+    url = os.getenv('LYNX_SCENE_GENERATOR_URL')
+
+    if url == None:
+        url = 'https://scene-generator.kubernetes.blazej-smorawski.com/get_scene'
+
+    await clear()
+    response = await post(url, payload={"seed": "test", "width": 128, "height": 128})
+    state.scene = Scene.deserialize(response.text)
+
 # Teardown is necessary to close all subprocesses
 # I tired using FastAPI `lifespan` but it might not work
 # with apps that are not top-level
@@ -183,6 +208,7 @@ async def populate():
 async def teardown():
     close_processes()
     return {"status": "done"}
+
 
 @app.get('/health')
 async def health():
