@@ -3,25 +3,25 @@
 # .__) \__, |__ | \| |__     |  | \__/ .__)  |      |     |   |  |  | \__/ | \|
 
 import asyncio
-from contextlib import asynccontextmanager
-from dataclasses import dataclass
 import itertools
 import json
 import time
 from typing import Dict, List, Optional, Union
-
+from contextlib import asynccontextmanager
+from dataclasses import dataclass
 
 import opensimplex
 import httpx
 from fastapi import BackgroundTasks, FastAPI
 from aioprocessing import AioPipe, AioProcess
 from aioprocessing.connection import AioConnection
+from pydantic import BaseModel
+
 from lynx.common.enitity import Entity
 from lynx.common.object import Object
 from lynx.common.scene import Scene
 from lynx.common.vector import Vector
 from lynx.common.actions.create_object import CreateObject
-from pydantic import BaseModel
 
 from src.runtime import execution_runtime
 
@@ -36,7 +36,7 @@ class GlobalState:
     processes: Dict = None,
     transitions: Dict = None,
     tick_number: int = 0
-    last_tick: float = 0
+    last_tick: float = 0.0
 
 
 @dataclass
@@ -113,7 +113,6 @@ async def send_scene():
 
     await asyncio.gather(*future_sends)
 
-
 def close_processes():
     for process_data in state.processes.values():
         process_data.process.terminate()
@@ -125,21 +124,20 @@ async def tick_trigger():
         state.last_tick = time.time()
 
 async def wait_for_next_tick():
-    tick = state.tick_number
-    while state.tick_number != tick + 1:
+    next_tick_number = state.tick_number + 1
+    while state.tick_number != next_tick_number:
         await asyncio.sleep(0.1)
 
 async def spawn_process_for_new_agent(object: Object):
     await wait_for_next_tick()
 
-    parent_conn, child_conn = AioPipe()
-    p = AioProcess(target=execution_runtime,
-                    args=(child_conn, object.id,))
-    p.start()
+    parent_connection, child_connection = AioPipe()
+    process = AioProcess(target=execution_runtime,
+                         args=(child_connection, object.id,))
+    process.start()
 
-    await parent_conn.coro_send(state.scene.serialize())
-    state.processes[object.id] = ProcessData(
-        process=p, pipe=parent_conn)
+    await parent_connection.coro_send(state.scene.serialize())
+    state.processes[object.id] = ProcessData(process=process, pipe=parent_connection)
 
 
 #  __   __       ___  __  __
