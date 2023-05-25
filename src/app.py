@@ -36,7 +36,7 @@ class GlobalState:
     processes: Dict = None,
     transitions: Dict = None,
     tick_number: int = 0
-    last_tick: float = 0.0
+    last_tick_time: float = 0.0
 
 
 @dataclass
@@ -119,9 +119,9 @@ def close_processes():
 
 
 async def tick_trigger():
-    if time.time() - state.last_tick >= 1:
+    if time.time() - state.last_tick_time >= 1:
         await tick()
-        state.last_tick = time.time()
+        state.last_tick_time = time.time()
 
 async def wait_for_next_tick():
     next_tick_number = state.tick_number + 1
@@ -132,8 +132,7 @@ async def spawn_process_for_new_agent(object: Object):
     await wait_for_next_tick()
 
     parent_connection, child_connection = AioPipe()
-    process = AioProcess(target=execution_runtime,
-                         args=(child_connection, object.id,))
+    process = AioProcess(target=execution_runtime, args=(child_connection, object.id,))
     process.start()
 
     await parent_connection.coro_send(state.scene.serialize())
