@@ -6,22 +6,22 @@ import asyncio
 import itertools
 import json
 import time
-from typing import Dict, List, Optional, Union
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from typing import Dict, List, Optional, Union
 
-import opensimplex
 import httpx
-from fastapi import BackgroundTasks, FastAPI
+import opensimplex
 from aioprocessing import AioPipe, AioProcess
 from aioprocessing.connection import AioConnection
-from pydantic import BaseModel
-
+from fastapi import BackgroundTasks, FastAPI
+from fastapi.middleware.gzip import GZipMiddleware
+from lynx.common.actions.create_object import CreateObject
 from lynx.common.enitity import Entity
 from lynx.common.object import Object
 from lynx.common.scene import Scene
 from lynx.common.vector import Vector
-from lynx.common.actions.create_object import CreateObject
+from pydantic import BaseModel
 
 from src.runtime import execution_runtime
 
@@ -63,6 +63,7 @@ async def lifespan(app: FastAPI):
     close_processes()
 
 app = FastAPI(lifespan=lifespan)
+app.add_middleware(GZipMiddleware, minimum_size=100)
 
 #       __      __   __  __      ___            __  ___    __        __
 # |__| |__ |   |__) |__ |__)    |__  |  | |\ | /  `  |  | /  \ |\ | (__'
