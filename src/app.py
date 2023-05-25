@@ -3,22 +3,25 @@
 # .__) \__, |__ | \| |__     |  | \__/ .__)  |      |     |   |  |  | \__/ | \|
 
 import asyncio
-from contextlib import asynccontextmanager
-from dataclasses import dataclass
 import itertools
 import json
+import time
 from typing import Dict, List, Optional, Union
-from fastapi import FastAPI
-import httpx
+from contextlib import asynccontextmanager
+from dataclasses import dataclass
 
 import opensimplex
+import httpx
+from fastapi import BackgroundTasks, FastAPI
 from aioprocessing import AioPipe, AioProcess
 from aioprocessing.connection import AioConnection
+from pydantic import BaseModel
+
 from lynx.common.enitity import Entity
 from lynx.common.object import Object
 from lynx.common.scene import Scene
 from lynx.common.vector import Vector
-from pydantic import BaseModel
+from lynx.common.actions.create_object import CreateObject
 
 from src.runtime import execution_runtime
 
@@ -33,6 +36,7 @@ class GlobalState:
     processes: Dict = None,
     transitions: Dict = None,
     tick_number: int = 0
+    last_tick_time: float = 0.0
 
 
 @dataclass
@@ -109,10 +113,31 @@ async def send_scene():
 
     await asyncio.gather(*future_sends)
 
-
 def close_processes():
     for process_data in state.processes.values():
         process_data.process.terminate()
+
+
+async def tick_trigger():
+    if time.time() - state.last_tick_time >= 1:
+        await tick()
+        state.last_tick_time = time.time()
+
+async def wait_for_next_tick():
+    next_tick_number = state.tick_number + 1
+    while state.tick_number != next_tick_number:
+        await asyncio.sleep(0.1)
+
+async def spawn_process_for_new_agent(object: Object):
+    await wait_for_next_tick()
+
+    parent_connection, child_connection = AioPipe()
+    process = AioProcess(target=execution_runtime, args=(child_connection, object.id,))
+    process.start()
+
+    await parent_connection.coro_send(state.scene.serialize())
+    state.processes[object.id] = ProcessData(process=process, pipe=parent_connection)
+
 
 #  __   __       ___  __  __
 # |__) /  \ |  |  |  |__ (__'
@@ -120,7 +145,8 @@ def close_processes():
 
 
 @app.get("/")
-async def get(tick_number: int) -> Dict[str, Union[int, str, List[List[str]]]]:
+async def get(tick_number: int, background_tasks: BackgroundTasks) -> Dict[str, Union[int, str, List[List[str]]]]:
+    background_tasks.add_task(tick_trigger)
     # if player has no scene or player tick number is incorrect
     # TODO remove tick number and use scene hash instead e.g. if player_scene_hash not in self.states.keys():
     if tick_number < 0 or tick_number > state.tick_number:
@@ -130,20 +156,11 @@ async def get(tick_number: int) -> Dict[str, Union[int, str, List[List[str]]]]:
 
 
 @app.post("/add_object")
-async def add(r: AddObjectRequest):
+async def add(r: AddObjectRequest, background_tasks: BackgroundTasks):
     object = Object.deserialize(r.serialized_object)
-    state.scene.add_entity(object)
+    state.scene.add_to_pending_actions(CreateObject(r.serialized_object).serialize())
     if object.tick != "":
-        parent_conn, child_conn = AioPipe()
-        p = AioProcess(target=execution_runtime,
-                       args=(child_conn, object.id,))
-        p.start()
-
-        # I'm not 100% sure if we should await it or not
-        await parent_conn.coro_send(state.scene.serialize())
-        state.processes[object.id] = ProcessData(
-            process=p, pipe=parent_conn)
-
+        background_tasks.add_task(spawn_process_for_new_agent, object)
     return {"serialized_object": object.serialize()}
 
 
