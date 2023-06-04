@@ -199,7 +199,7 @@ async def populate():
         if opensimplex.noise2(x, y) > .3:
             entity_name = "Tree"
             if id % 2 == 0:
-               entity_name = "Stone"
+               entity_name = "Rock"
             state.scene.add_entity(
                 Object(id=id, name= entity_name, position=Vector(x, y)))
             id += 1
