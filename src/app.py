@@ -85,7 +85,7 @@ def calculate_deltas(from_tick_number: int, to_tick_number: int, actions_in_tick
     return deltas
 
 
-async def fetch_wrapper(process_data: ProcessData) -> str:
+async def fetch_actions_from_process(process_data: ProcessData) -> str:
     try:
         return await process_data.pipe.coro_recv()
     except Exception as e:
@@ -96,7 +96,7 @@ async def fetch_wrapper(process_data: ProcessData) -> str:
 async def fetch_actions() -> List[Entity]:
     future_actions = []
     for process_data in state.processes.values():
-        future_actions.append(fetch_wrapper(process_data))
+        future_actions.append(fetch_actions_from_process(process_data))
 
     serialized_actions = await asyncio.gather(*future_actions)
     return [Entity.deserialize(serialized_action) for serialized_action in serialized_actions]
@@ -115,7 +115,8 @@ def apply_actions(actions: List[Entity]) -> List[str]:
 
     return applied_actions
 
-async def send_wrapper(process_data: ProcessData, serialized_scene: str) -> str:
+
+async def send_scene_to_process(process_data: ProcessData, serialized_scene: str) -> str:
     try:
         return await process_data.pipe.coro_send(serialized_scene)
     except Exception as e:
@@ -123,11 +124,12 @@ async def send_wrapper(process_data: ProcessData, serialized_scene: str) -> str:
         state.processes.remove(process_data.object_id)
         RemoveObject(process_data.object_id).serialize()
 
+
 async def send_scene():
     serialized_scene = state.scene.serialize()
     future_sends = []
     for process_data in state.processes.values():
-        future_sends.append(send_wrapper(process_data, serialized_scene))
+        future_sends.append(send_scene_to_process(process_data, serialized_scene))
 
     await asyncio.gather(*future_sends)
 
@@ -153,13 +155,11 @@ async def spawn_process_for_new_agent(object: Object):
     await wait_for_next_tick()
 
     parent_connection, child_connection = AioPipe()
-    process = AioProcess(target=execution_runtime,
-                         args=(child_connection, object.id,))
+    process = AioProcess(target=execution_runtime, args=(child_connection, object.id,))
     process.start()
 
     await parent_connection.coro_send(state.scene.serialize())
-    state.processes[object.id] = ProcessData(
-        object_id= object.id, process=process, pipe=parent_connection)
+    state.processes[object.id] = ProcessData(object_id=object.id, process=process, pipe=parent_connection)
 
 
 #  __   __       ___  __  __
@@ -181,8 +181,7 @@ async def get(tick_number: int, background_tasks: BackgroundTasks) -> Dict[str, 
 @app.post("/add_object")
 async def add(r: AddObjectRequest, background_tasks: BackgroundTasks):
     object = Object.deserialize(r.serialized_object)
-    state.scene.add_to_pending_actions(
-        CreateObject(r.serialized_object).serialize())
+    state.scene.add_to_pending_actions(CreateObject(r.serialized_object).serialize())
     if object.tick != "":
         background_tasks.add_task(spawn_process_for_new_agent, object)
     return {"serialized_object": object.serialize()}
@@ -191,8 +190,7 @@ async def add(r: AddObjectRequest, background_tasks: BackgroundTasks):
 @app.post("/tick")
 async def tick():
     actions = await fetch_actions()
-    actions.extend([Entity.deserialize(pending_action)
-                   for pending_action in state.scene.pending_actions])
+    actions.extend([Entity.deserialize(pending_action) for pending_action in state.scene.pending_actions])
     state.scene.pending_actions.clear()
     applied_actions = apply_actions(actions)
     state.transitions.append(applied_actions)
@@ -239,6 +237,7 @@ async def generate_scene():
     await clear()
     response = await post(url, payload={"seed": "test", "width": 128, "height": 128})
     state.scene = Scene.deserialize(response.text)
+
 
 # Teardown is necessary to close all subprocesses
 # I tired using FastAPI `lifespan` but it might not work
