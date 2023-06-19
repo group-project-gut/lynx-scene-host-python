@@ -41,7 +41,7 @@ def execution_runtime(pipe: AioConnection, object_id: int):
 
     while (True):
         # Sure, I know exec bad
-        # pylint: disable=exec-used
+        # pylint: disable= exec-used
         exec(
             scene.get_object_by_id(object_id).tick,
             {'__builtins__': builtins},
