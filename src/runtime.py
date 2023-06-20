@@ -7,6 +7,7 @@ def execution_runtime(pipe: AioConnection, object_id: int):
 
     from lynx.common.actions.action import Action
     from lynx.common.actions.chop import Chop
+    from lynx.common.actions.mine import Mine
     from lynx.common.actions.error_log import ErrorLog
     from lynx.common.actions.move import Move
     from lynx.common.actions.push import Push
@@ -28,6 +29,7 @@ def execution_runtime(pipe: AioConnection, object_id: int):
         'chop': lambda vector: send(Chop(object_id, vector)),
         'move': lambda vector: send(Move(object_id, vector)),
         'push': lambda vector: send(Push(object_id, vector)),
+        'mine': lambda vector: send(Mine(object_id, vector)),
         'log': lambda text: send(MessageLog(object_id, text)),
         'NORTH': Direction.NORTH.value,
         'SOUTH': Direction.SOUTH.value,
