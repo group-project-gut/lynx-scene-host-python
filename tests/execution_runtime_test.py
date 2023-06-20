@@ -37,4 +37,5 @@ class TestExecutionRuntime:
             pass
 
         assert received_actions == ['{"type": "Move", "attributes": {"object_id": 0, "direction": {"x": 0, "y": 1}}}',
-                                    '{"type": "Move", "attributes": {"object_id": 0, "direction": {"x": -1, "y": 0}}}']
+                                    '{"type": "Move", "attributes": {"object_id": 0, "direction": {"x": -1, "y": 0}}}',
+                                    '{"type": "ErrorLog", "attributes": {"text": "Expecting value: line 1 column 1 (char 0)"}}']
