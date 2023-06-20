@@ -218,8 +218,11 @@ async def populate():
                                       position=Vector(x, y), tags= ['walkable']))
         id += 1
         if opensimplex.noise2(x, y) > .3:
+            entity_name = "Tree"
+            if id % 2 == 0:
+               entity_name = "Rock"
             state.scene.add_entity(
-                Object(id=id, name="Tree", position=Vector(x, y)))
+                Object(id=id, name= entity_name, position=Vector(x, y)))
             id += 1
 
     return {"id": id}
