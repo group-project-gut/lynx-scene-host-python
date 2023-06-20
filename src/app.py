@@ -215,11 +215,11 @@ async def populate():
     id = 0
     for (x, y) in itertools.product(range(100), range(10)):
         state.scene.add_entity(Object(id=id, name="Grass",
-                                      position=Vector(x, y), walkable=True))
+                                      position=Vector(x, y), tags= ['walkable']))
         id += 1
         if opensimplex.noise2(x, y) > .3:
             state.scene.add_entity(
-                Object(id=id, name="Tree", position=Vector(x, y), walkable=False))
+                Object(id=id, name="Tree", position=Vector(x, y)))
             id += 1
 
     return {"id": id}
