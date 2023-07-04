@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Tuple
 
 from lynx.common.vector import Vector
 
@@ -24,17 +24,6 @@ class AStarAlgorithm:
     """
     start: Vector = None
     end: Vector = None
-
-    @staticmethod
-    def transform_list_of_positions_to_list_of_unit_vectors(points) -> List[Vector]:
-        vectors = []
-        for i in range(len(points) - 1):
-            start_point = points[i]
-            end_point = points[i + 1]
-            vector = Vector(end_point[0] - start_point[0], end_point[1] - start_point[1])
-            # vector = (end_point[0] - start_point[0], end_point[1] - start_point[1])
-            vectors.append(vector)
-        return vectors
 
     def get_path(self, scene: 'Scene') -> List[Vector]:
         """
@@ -74,7 +63,7 @@ class AStarAlgorithm:
                 while current is not None:
                     path.append(current.position)
                     current = current.parent
-                return self.transform_list_of_positions_to_list_of_unit_vectors(path[::-1])
+                return self.transform_to_unit_vectors(path[::-1])
 
             # generate children
             children = []
@@ -89,7 +78,7 @@ class AStarAlgorithm:
                     continue
                 is_not_walkable = False
                 for object_on_ground in objects_on_ground:
-                    if not object_on_ground.walkable:
+                    if 'walkable' not in object_on_ground.tags:
                         is_not_walkable = True
                         break
 
@@ -117,5 +106,24 @@ class AStarAlgorithm:
                     if child == open_node and child.g > open_node.g:
                         continue
 
+                if child in open_list:
+                    continue
+
                 # add the child to the open list
                 open_list.append(child)
+
+    @staticmethod
+    def transform_to_unit_vectors(positions: List[Tuple]) -> List[Vector]:
+        """
+        Transform list of tuples to list of vectors from start to end
+        :param positions: list of tuples
+        :return: list of unit vectors from start to end
+        """
+        vectors = []
+        for i in range(len(positions) - 1):
+            start_point = positions[i]
+            end_point = positions[i + 1]
+            vector = Vector(end_point[0] - start_point[0], end_point[1] - start_point[1])
+            # vector = (end_point[0] - start_point[0], end_point[1] - start_point[1])
+            vectors.append(vector)
+        return vectors

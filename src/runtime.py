@@ -13,7 +13,7 @@ def execution_runtime(pipe: AioConnection, object_id: int):
     from lynx.common.actions.action import Action
     from lynx.common.actions.chop import Chop
     from lynx.common.actions.mine import Mine
-    from lynx.common.actions.error_log import ErrorLog
+    # from lynx.common.actions.error_log import ErrorLog
     from lynx.common.actions.move import Move
     from lynx.common.actions.push import Push
     from lynx.common.actions.message_log import MessageLog
@@ -40,15 +40,19 @@ def execution_runtime(pipe: AioConnection, object_id: int):
         scene = Scene.deserialize(scene_serialized)
         logger.debug(f"Scene has been successfully deserialized")
 
-    def goto(move, position: Vector):
+    def goto(move, target_position: Vector):
         nonlocal scene
-        obj = scene.get_object_by_id(object_id)
-        algorithm = AStarAlgorithm(obj.position, position)
-        vectors = algorithm.get_path(scene)
-        for vector in vectors:
+        agent = scene.get_object_by_id(object_id)
+        objects_on_target_position = scene.get_objects_by_position(target_position)
+        for object in objects_on_target_position:
+            if 'walkable' not in object.tags:
+                return
+
+        path = AStarAlgorithm(agent.position, target_position).get_path(scene)
+        for vector in path:
             move(vector)
-        if obj.position == position:
-            return
+        if agent.position == target_position:
+            pass
 
     builtins = {
         'agent': scene.get_object_by_id(object_id),
@@ -57,7 +61,7 @@ def execution_runtime(pipe: AioConnection, object_id: int):
         'push': lambda vector: send(Push(object_id, vector)),
         'mine': lambda vector: send(Mine(object_id, vector)),
         'log': lambda text: send(MessageLog(object_id, text)),
-        'goto': lambda position: goto(lambda vector: send(Move(object_id, vector)), position),
+        'goto': lambda target_position: goto(lambda vector: send(Move(object_id, vector)), target_position),
         'NORTH': Direction.NORTH.value,
         'SOUTH': Direction.SOUTH.value,
         'EAST': Direction.EAST.value,
@@ -78,4 +82,5 @@ def execution_runtime(pipe: AioConnection, object_id: int):
                 {'__builtins__': builtins},
             )
     except Exception as e:
-        send(ErrorLog(text=str(e)))
+        print(e)
+        # send(ErrorLog(text=str(e)))
