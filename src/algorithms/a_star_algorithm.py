@@ -124,6 +124,5 @@ class AStarAlgorithm:
             start_point = positions[i]
             end_point = positions[i + 1]
             vector = Vector(end_point[0] - start_point[0], end_point[1] - start_point[1])
-            # vector = (end_point[0] - start_point[0], end_point[1] - start_point[1])
             vectors.append(vector)
         return vectors

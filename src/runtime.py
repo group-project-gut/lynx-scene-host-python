@@ -13,7 +13,7 @@ def execution_runtime(pipe: AioConnection, object_id: int):
     from lynx.common.actions.action import Action
     from lynx.common.actions.chop import Chop
     from lynx.common.actions.mine import Mine
-    # from lynx.common.actions.error_log import ErrorLog
+    from lynx.common.actions.error_log import ErrorLog
     from lynx.common.actions.move import Move
     from lynx.common.actions.push import Push
     from lynx.common.actions.message_log import MessageLog
@@ -82,5 +82,4 @@ def execution_runtime(pipe: AioConnection, object_id: int):
                 {'__builtins__': builtins},
             )
     except Exception as e:
-        print(e)
-        # send(ErrorLog(text=str(e)))
+        send(ErrorLog(text=str(e)))
