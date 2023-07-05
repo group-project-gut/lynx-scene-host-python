@@ -37,7 +37,7 @@ class GlobalState:
     processes: Dict = None,
     transitions: Dict = None,
     tick_number: int = 0
-    last_tick_time: float = 0.0
+    last_tick_time: float = round(time.time(), 3)
 
 
 @dataclass
@@ -142,7 +142,7 @@ def close_processes():
 async def tick_trigger():
     if time.time() - state.last_tick_time >= 1:
         await tick()
-        state.last_tick_time = time.time()
+        state.last_tick_time = round(time.time(), 3)
 
 
 async def wait_for_next_tick():
@@ -173,9 +173,9 @@ async def get(tick_number: int, background_tasks: BackgroundTasks) -> Dict[str, 
     # if player has no scene or player tick number is incorrect
     # TODO remove tick number and use scene hash instead e.g. if player_scene_hash not in self.states.keys():
     if tick_number < 0 or tick_number > state.tick_number:
-        return {"tick_number": state.tick_number, "scene": state.scene.serialize()}
+        return {"tick_number": state.tick_number, "tick_timestamp": state.last_tick_time, "scene": state.scene.serialize()}
     else:
-        return {"tick_number": state.tick_number, "deltas": json.dumps(calculate_deltas(tick_number, state.tick_number, state.transitions))}
+        return {"tick_number": state.tick_number, "tick_timestamp": state.last_tick_time, "deltas": json.dumps(calculate_deltas(tick_number, state.tick_number, state.transitions))}
 
 
 @app.post("/add_object")
