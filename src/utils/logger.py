@@ -12,5 +12,7 @@ def get_logger() -> logging.Logger:
     handler = logging.StreamHandler()
     handler.setLevel(logging.DEBUG)
     handler.setFormatter(formatter)
-    logger.addHandler(handler)
+    if not logger.hasHandlers():
+        logger.addHandler(handler)
+
     return logger

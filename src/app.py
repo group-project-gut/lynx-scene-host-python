@@ -143,6 +143,7 @@ async def send_scene_to_process(process_data: ProcessData, serialized_scene: str
         logger.debug(f"Sending scene to process {process_data.object_id}")
         return await process_data.pipe.coro_send(serialized_scene)
     except Exception as e:
+        logger.error(f"Failed to send scene to process {process_data.object_id}: {e}")
         # TODO: Not used right now
         state.processes.remove(process_data.object_id)
         RemoveObject(process_data.object_id).serialize()
