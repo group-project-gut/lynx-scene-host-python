@@ -78,7 +78,6 @@ app.add_middleware(GZipMiddleware, minimum_size=100)
 # |  | |__ |__ |    |__ |  \    |    \__/ | \| \__,  |  | \__/ | \| .__)
 
 
-
 async def post(url: str, payload):
     async with httpx.AsyncClient() as client:
         result = await client.post(url, json=payload)
@@ -111,6 +110,7 @@ async def fetch_actions_from_process(process_data: ProcessData) -> str:
 async def fetch_actions() -> List[Entity]:
     logger.debug(f"Starting to fetch actions")
     future_actions = []
+    print("Starting to fetch actions")
     for process_data in state.processes.values():
         future_actions.append(fetch_actions_from_process(process_data))
         logger.debug(f"Actions from process {process_data.object_id} have been fetched")
@@ -261,7 +261,7 @@ async def populate():
     await clear()
     opensimplex.seed(1234)
     id = 0
-    for (x, y) in itertools.product(range(100), range(100)):
+    for (x, y) in itertools.product(range(100), range(10)):
         state.scene.add_entity(Object(id=id, name="Grass",
                                       position=Vector(x, y), tags=['walkable']))
         id += 1
@@ -275,7 +275,6 @@ async def populate():
     logger.debug(f"Scene has been successfully populated")
 
     return {"id": id}
-
 
 
 @app.post("/generate_scene")

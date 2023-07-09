@@ -4,19 +4,6 @@ from typing import List, Tuple
 from lynx.common.vector import Vector
 
 
-class Node:
-    def __init__(self, parent=None, position=None):
-        self.parent = parent
-        self.position = position
-
-        self.g = 0
-        self.h = 0
-        self.f = 0
-
-    def __eq__(self, other):
-        return self.position == other.position
-
-
 @dataclass
 class AStarAlgorithm:
     """
@@ -25,15 +12,27 @@ class AStarAlgorithm:
     start: Vector = None
     end: Vector = None
 
+    class Node:
+        def __init__(self, parent=None, position=None):
+            self.parent = parent
+            self.position = position
+
+            self.distance_to_start_node = 0
+            self.heuristic = 0
+            self.total_cost = 0
+
+        def __eq__(self, other):
+            return self.position == other.position
+
     def get_path(self, scene: 'Scene') -> List[Vector]:
         """
         Get the shortest path from start to end in scene using A* algorithm
         return list of vectors from start
         """
-        start_node = Node(None, (self.start.x, self.start.y))
-        start_node.g = start_node.h = start_node.f = 0
-        end_node = Node(None, (self.end.x, self.end.y))
-        end_node.g = end_node.h = end_node.f = 0
+        start_node = AStarAlgorithm.Node(position=(self.start.x, self.start.y))
+        start_node.distance_to_start_node = start_node.heuristic = start_node.total_cost = 0
+        end_node = AStarAlgorithm.Node(position=(self.end.x, self.end.y))
+        end_node.distance_to_start_node = end_node.heuristic = end_node.total_cost = 0
 
         # initialize both open and closed list
         open_list = []
@@ -48,7 +47,7 @@ class AStarAlgorithm:
             current_node = open_list[0]
             current_index = 0
             for index, item in enumerate(open_list):
-                if item.f < current_node.f:
+                if item.total_cost < current_node.total_cost:
                     current_node = item
                     current_index = index
 
@@ -85,7 +84,7 @@ class AStarAlgorithm:
                 if is_not_walkable:
                     continue
 
-                new_node = Node(current_node, node_position)
+                new_node = AStarAlgorithm.Node(current_node, node_position)
                 children.append(new_node)
 
             # loop through children
@@ -96,14 +95,14 @@ class AStarAlgorithm:
                         continue
 
                 # create the f, g, and h values
-                child.g = current_node.g + 1
-                child.h = ((child.position[0] - end_node.position[0]) ** 2) + (
+                child.distance_to_start_node = current_node.distance_to_start_node + 1
+                child.heuristic = ((child.position[0] - end_node.position[0]) ** 2) + (
                         (child.position[1] - end_node.position[1]) ** 2)
-                child.f = child.g + child.h
+                child.total_cost = child.distance_to_start_node + child.heuristic
 
                 # child is already in the open list
                 for open_node in open_list:
-                    if child == open_node and child.g > open_node.g:
+                    if child == open_node and child.distance_to_start_node > open_node.distance_to_start_node:
                         continue
 
                 if child in open_list:
