@@ -21,7 +21,7 @@ class AStarAlgorithm:
             self.heuristic = 0
             self.total_cost = 0
 
-        def __eq__(self, other):
+        def __eq__(self, other) -> bool:
             return self.position == other.position
 
     def get_path(self, scene: 'Scene') -> List[Vector]:
@@ -44,15 +44,15 @@ class AStarAlgorithm:
         # loop until you find the end
         while len(open_list) > 0:
             # get the current node
-            current_node = open_list[0]
-            current_index = 0
-            for index, item in enumerate(open_list):
-                if item.total_cost < current_node.total_cost:
-                    current_node = item
-                    current_index = index
+            current_node_index = 0
+            current_node = open_list[current_node_index]
+            for open_node_index, open_node in enumerate(open_list):
+                if open_node.total_cost < current_node.total_cost:
+                    current_node = open_node
+                    current_node_index = open_node_index
 
             # pop current off open list, add to closed list
-            open_list.pop(current_index)
+            open_list.pop(current_node_index)
             closed_list.append(current_node)
 
             # found the goal
@@ -119,9 +119,7 @@ class AStarAlgorithm:
         :return: list of unit vectors from start to end
         """
         vectors = []
-        for i in range(len(positions) - 1):
-            start_point = positions[i]
-            end_point = positions[i + 1]
+        for start_point, end_point in list(zip(positions, positions[1:])):
             vector = Vector(end_point[0] - start_point[0], end_point[1] - start_point[1])
             vectors.append(vector)
         return vectors

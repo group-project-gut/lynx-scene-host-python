@@ -110,7 +110,6 @@ async def fetch_actions_from_process(process_data: ProcessData) -> str:
 async def fetch_actions() -> List[Entity]:
     logger.debug(f"Starting to fetch actions")
     future_actions = []
-    print("Starting to fetch actions")
     for process_data in state.processes.values():
         future_actions.append(fetch_actions_from_process(process_data))
         logger.debug(f"Actions from process {process_data.object_id} have been fetched")
