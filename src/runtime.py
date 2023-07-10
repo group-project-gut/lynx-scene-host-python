@@ -1,9 +1,12 @@
+import logging
+
 from aioprocessing.connection import AioConnection
 from lynx.common.scene import Scene
 
-from src.utils.logger import get_logger
+from src.utils.logger import setup_logger
 
-logger = get_logger()
+setup_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def execution_runtime(pipe: AioConnection, object_id: int):
@@ -19,11 +22,11 @@ def execution_runtime(pipe: AioConnection, object_id: int):
     from lynx.common.vector import Vector
     from lynx.common.enums import Direction
 
-    logger.info(f"Starting execution runtime for object with id: {str(object_id)}, waiting for scene to be sent")
+    logger.debug(f"Starting execution runtime for object with id: {str(object_id)}, waiting for scene to be sent")
     scene_serialized = pipe.recv()
-    logger.info("Scene has been successfully received, starting to deserialize scene")
+    logger.debug("Scene has been successfully received, starting to deserialize scene")
     scene: Scene = Scene.deserialize(scene_serialized)
-    logger.info("Scene has been successfully deserialized")
+    logger.debug("Scene has been successfully deserialized")
 
     def send(action: Action):
         logger.debug(f"Sending action: {action.serialize()}")

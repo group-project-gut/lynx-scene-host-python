@@ -25,13 +25,14 @@ from lynx.common.vector import Vector
 from pydantic import BaseModel
 
 from src.runtime import execution_runtime
-from src.utils.logger import get_logger
+from src.utils.logger import setup_logger, get_logger
 
 #  __    _   ___   _       __  ___  __        __  ___       __   __  __
 # |  \  /_\   |   /_\     (__'  |  |__) |  | /  `  |  |  | |__) |__ (__'
 # |__/ /   \  |  /   \    .__)  |  |  \ \__/ \__,  |  \__/ |  \ |__ .__)
 
-logger = get_logger()
+setup_logger(__name__)
+logger = get_logger(__name__)
 
 
 @dataclass
