@@ -217,11 +217,9 @@ async def get(tick_number: int, background_tasks: BackgroundTasks) -> Dict[str, 
 
 @app.post("/add_object")
 async def add(r: AddObjectRequest, background_tasks: BackgroundTasks):
-    logger.debug(f"Starting to add object to scene")
-    logger.debug(f"Starting to deserialize object")
+    logger.debug(f"Starting to add object to scene, starting to deserialize object")
     object = Object.deserialize(r.serialized_object)
-    logger.debug(f"Object has been successfully deserialized")
-    logger.debug(f"Starting to add object to scene")
+    logger.debug(f"Object has been successfully deserialized, starting to add object to scene")
     state.scene.add_to_pending_actions(CreateObject(r.serialized_object).serialize())
     if object.tick != "":
         logger.debug(f"Object has tick {object.tick}")

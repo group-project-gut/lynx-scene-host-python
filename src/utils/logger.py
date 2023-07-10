@@ -8,7 +8,7 @@ def get_logger() -> logging.Logger:
     """
     logger = logging.getLogger("lynx")
     logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(process)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s [%(process)s] [%(levelname)s] - %(message)s')
     handler = logging.StreamHandler()
     handler.setLevel(logging.DEBUG)
     handler.setFormatter(formatter)
