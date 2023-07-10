@@ -47,15 +47,32 @@ def execution_runtime(pipe: AioConnection, object_id: int):
         agent = scene.get_object_by_id(object_id)
         if agent.position == target_position:
             send(MessageLog(object_id, f"I am already on target position"))
+            return
 
         objects_on_target_position = scene.get_objects_by_position(target_position)
         for object in objects_on_target_position:
             if 'walkable' not in object.tags:
                 send(MessageLog(object_id, f"Target position: {target_position} is not walkable"))
+                return
 
-        path = AStarAlgorithm(agent.position, target_position).get_path(scene)
-        for vector in path:
-            scene = send(Move(object_id, vector))
+        while True:
+            path = AStarAlgorithm(agent.position, target_position).get_path(scene)
+            obstacle_found = False
+            for vector in path:
+                agent = scene.get_object_by_id(object_id)
+                future_position = agent.position + vector
+                objects_on_future_position = scene.get_objects_by_position(future_position)
+                for object_on_future_position in objects_on_future_position:
+                    if 'walkable' not in object_on_future_position.tags:
+                        obstacle_found = True
+                        break
+
+                if obstacle_found:
+                    break
+
+                scene = send(Move(object_id, vector))
+            if not obstacle_found:
+                break
 
     builtins = {
         'agent': scene.get_object_by_id(object_id),
