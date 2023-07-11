@@ -141,14 +141,14 @@ def close_processes():
 
 async def tick_trigger():
     if time.time() - state.last_tick_time >= 1:
-        await tick()
         state.last_tick_time = round(time.time(), 3)
+        await tick()
 
 
 async def wait_for_next_tick():
     next_tick_number = state.tick_number + 1
     while state.tick_number != next_tick_number:
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.001)
 
 
 async def spawn_process_for_new_agent(object: Object):
@@ -173,9 +173,9 @@ async def get(tick_number: int, background_tasks: BackgroundTasks) -> Dict[str, 
     # if player has no scene or player tick number is incorrect
     # TODO remove tick number and use scene hash instead e.g. if player_scene_hash not in self.states.keys():
     if tick_number < 0 or tick_number > state.tick_number:
-        return {"tick_number": state.tick_number, "tick_timestamp": state.last_tick_time, "scene": state.scene.serialize()}
+        return {"tick_number": state.tick_number, "scene": state.scene.serialize()}
     else:
-        return {"tick_number": state.tick_number, "tick_timestamp": state.last_tick_time, "deltas": json.dumps(calculate_deltas(tick_number, state.tick_number, state.transitions))}
+        return {"tick_number": state.tick_number, "deltas": json.dumps(calculate_deltas(tick_number, state.tick_number, state.transitions))}
 
 
 @app.post("/add_object")
