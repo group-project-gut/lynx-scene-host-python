@@ -5,6 +5,7 @@
 import asyncio
 import itertools
 import json
+import logging
 import time
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -25,14 +26,14 @@ from lynx.common.vector import Vector
 from pydantic import BaseModel
 
 from src.runtime import execution_runtime
-from src.utils.logger import setup_logger, get_logger
+from main import config
 
 #  __    _   ___   _       __  ___  __        __  ___       __   __  __
 # |  \  /_\   |   /_\     (__'  |  |__) |  | /  `  |  |  | |__) |__ (__'
 # |__/ /   \  |  /   \    .__)  |  |  \ \__/ \__,  |  \__/ |  \ |__ .__)
 
-setup_logger(__name__)
-logger = get_logger(__name__)
+
+logger = logging.getLogger(config["GENERAL"]["APPLICATION_NAME"])
 
 
 @dataclass

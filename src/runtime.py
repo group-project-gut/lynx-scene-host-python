@@ -2,11 +2,9 @@ import logging
 
 from aioprocessing.connection import AioConnection
 from lynx.common.scene import Scene
+from main import config
 
-from src.utils.logger import setup_logger
-
-setup_logger(__name__)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(config["GENERAL"]["APPLICATION_NAME"])
 
 
 def execution_runtime(pipe: AioConnection, object_id: int):
